@@ -1,8 +1,10 @@
 from typing import AsyncGenerator
 
+from fastapi.params import Depends
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 from app.config import settings
+from typing import Annotated
 
 
 class Base(DeclarativeBase):
@@ -18,13 +20,4 @@ async def get_session() -> AsyncGenerator[AsyncSession | None]:
         yield session
 
 
-if __name__ == "__main__":
-    import asyncio
-    from sqlalchemy import text
-
-    async def test_db():
-        async with SessionLocal() as session:
-            result = await session.execute(text("SELECT 1"))
-            return result.scalar()
-
-    print(asyncio.run(test_db()))
+sessionDep = Annotated[AsyncSession, Depends(get_session)]
