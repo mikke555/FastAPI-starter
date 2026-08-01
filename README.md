@@ -1,6 +1,6 @@
 # FastAPI-starter
 
-A FastAPI starter template with SQLAlchemy, Alembic migrations, and a PostgreSQL database running in Docker.
+A FastAPI starter template with async SQLAlchemy 2, Alembic migrations, and a PostgreSQL database running in Docker.
 
 ## Requirements
 
@@ -11,78 +11,62 @@ A FastAPI starter template with SQLAlchemy, Alembic migrations, and a PostgreSQL
 ## Setup guide
 
 ```bash
-uv sync
-mv .env.example .env
-docker compose up -d
+uv sync                  # install dependencies
+cp .env.example .env     # database config
+docker compose up -d     # start PostgreSQL
 ```
 
-Create your own models in `./app/models`, then migrate:
+Define your models in `app/models` and import each module in `app/models/__init__.py` — otherwise Alembic won't detect them:
+
+```python
+from app.models import users as users
+```
+
+Once the models are in place, generate and apply the first migration:
 
 ```bash
 uv run alembic revision --autogenerate -m "init"
 uv run alembic upgrade head
 ```
 
-Finally, run the app with UV:
+Run the app:
 
 ```bash
 uv run fastapi dev
 ```
 
-## Reference / cheatsheet
+Interactive docs: http://localhost:8000/docs
 
-### Docker
+## Development
 
-Start the PostgreSQL container in detached mode:
-
-```bash
-docker compose up -d
-```
-
-Check connection:
+Format and lint:
 
 ```bash
-docker compose exec postgres pg_isready
+uv run ruff format
+uv run ruff check
 ```
 
-Stop and remove the container, including volumes:
+Generate a migration from model changes, apply it, revert one revision, or roll everything back:
 
 ```bash
-docker compose down -v
+uv run alembic revision --autogenerate -m "msg"
+uv run alembic upgrade head
+
+uv run alembic downgrade -1
+uv run alembic downgrade base
 ```
 
-### Alembic
-
-Create Alembic migration environment with async template (one-time setup, already done):
+The migration environment in `migrations/` was created with the async template — one-time setup, already done, kept here for reference:
 
 ```bash
 uv run alembic init -t async migrations
 ```
 
-Generate a migration from model changes, then apply it:
+Open a psql shell, check the database container, or stop it and wipe the data:
 
 ```bash
-uv run alembic revision --autogenerate -m "init"
-uv run alembic upgrade head
-```
+docker compose exec postgres psql -U postgres -d devdb
+docker compose exec postgres pg_isready
 
-Go down one revision:
-
-```bash
-uv run alembic downgrade -1
-```
-
-Downgrade back to nothing:
-
-```bash
-uv run alembic downgrade base
-```
-
-### Ruff
-
-Autofix formatting & check for linting errors:
-
-```bash
-uv run ruff format
-uv run ruff check
+docker compose down -v
 ```
